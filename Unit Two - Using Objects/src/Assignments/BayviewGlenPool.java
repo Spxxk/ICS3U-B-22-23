@@ -18,7 +18,7 @@ public class BayviewGlenPool {
 
         System.out.println("Enter the length of the pool in meters: ");
         double length = in.nextDouble();
-
+        
         System.out.println("Enter the width in meters: ");
         double width = in.nextDouble();
 
