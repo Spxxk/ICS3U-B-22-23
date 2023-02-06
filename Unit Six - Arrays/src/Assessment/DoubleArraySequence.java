@@ -115,27 +115,27 @@ public class DoubleArraySequence implements Cloneable {
     *       arithmetic overflow.
     **/
    public void addAfter(double d) {
-   if(manyItems + 1 >= data.length){
-      double[] och = new double[data.length*2]; //I still do not know why we do x2 and not +1
-      for(int i = 0; i < manyItems; i++){
-         och[i] = data[i];
+      if(manyItems + 1 > data.length){
+         int newCapacity = data.length*2; //fail earlier use less memory
+         double[] temp = new double[newCapacity];
+         for(int i = 0; i < data.length; i++){
+            temp[i] = data[i];
+         }
+         data = temp;
       }
-      data = och;
-   }
-   if(currentIndex != manyItems) {
-      for (int i = manyItems; i > currentIndex + 1; i--)
-         data[i] = data[i - 1];
-
-      data[currentIndex + 1] = d;
-      currentIndex++;
-   }
-   else {
+      if(!isCurrent()){
       data[manyItems] = d;
       currentIndex = manyItems;
+      }
+      else{
+         for(int i = manyItems-1; i > currentIndex; i--){
+            data[i+1] = data[i];
+         }
+         data[currentIndex + 1] = d;
+         currentIndex = currentIndex+1;
+      }
+      manyItems++;
    }
-
-   manyItems++;
- }
 
    /**
     * Add a new element to this sequence, before the current element.
@@ -163,27 +163,29 @@ public class DoubleArraySequence implements Cloneable {
     *       arithmetic overflow.
     **/
    public void addBefore(double element) {
-      if(manyItems + 1 >= data.length){
-         double[] och = new double[data.length*2]; 
-         for(int i = 0; i < manyItems; i++){
-            och[i] = data[i];
+      if(manyItems + 1 > data.length){
+         int newCapacity = data.length*2; //fail earlier use less memory
+         double[] temp = new double[newCapacity];
+         for(int i = 0; i < data.length; i++){
+            temp[i] = data[i];
          }
-         data = och;
+         data = temp;
       }
       if(!isCurrent()){
-         currentIndex = 0;
+         for(int i = manyItems-1; i >= 0; i--){
+            data[i+1] = data[i];
+         }
+      data[0] = element;
+      currentIndex = 0;
       }
-   
-   
-      for (int i = manyItems; i > currentIndex; i--){
-         data[i] = data[i - 1];
+      else{
+         for(int i = manyItems - 1; i >= currentIndex; i--){
+            data[i+1] = data[i];
+         }
+         data[currentIndex] = element;
       }
-
-   data[currentIndex] = element; 
-      
-   manyItems++;
-}  
-   
+      manyItems++;
+   }
 
    /**
     * Place the contents of another sequence at the end of this sequence.
@@ -209,9 +211,11 @@ public class DoubleArraySequence implements Cloneable {
     *       that will cause the sequence to fail.
     **/
    public void addAll(DoubleArraySequence addend) {
-      if (addend == null) throw new NullPointerException();
+      if(addend == null)
+      throw new NullPointerException();
       data = catenation(this, addend).data;
-      manyItems += addend.size();
+      manyItems = manyItems + addend.size();
+
    }
 
    /**
@@ -236,9 +240,11 @@ public class DoubleArraySequence implements Cloneable {
     **/
    public void advance() {
       if(!isCurrent()){
-         throw new IllegalStateException("currentIndex is not avalible");
+         throw new IllegalStateException();
       }
-      currentIndex++;
+      if(currentIndex < manyItems){
+         currentIndex++;
+      }
    }
 
    /**
@@ -266,6 +272,7 @@ public class DoubleArraySequence implements Cloneable {
       }
 
       answer.data = (double[]) data.clone();
+
       return answer;
    }
 
@@ -282,7 +289,7 @@ public class DoubleArraySequence implements Cloneable {
     * @return
     *         a new sequence that has the elements of s1 followed by the
     *         elements of s2 (with no current element)
-    * @exception NullPointerException.
+    * @exception NullPointerException
     *                                  Indicates that one of the arguments is null.
     * @exception OutOfMemoryError
     *                                  Indicates insufficient memory for the new
@@ -293,16 +300,23 @@ public class DoubleArraySequence implements Cloneable {
     *       that will cause the sequence to fail.
     **/
    public static DoubleArraySequence catenation(DoubleArraySequence s1, DoubleArraySequence s2) {
-      DoubleArraySequence temp = new DoubleArraySequence(s1.manyItems + s2.manyItems);
-      for (int i = 0; i < s1.manyItems; i++) {
-           temp.data[i] = s1.data[i];
-      } for (int i = s1.manyItems; i < s2.manyItems + s1.manyItems; i++) {
-           temp.data[i] = s2.data[i-s1.manyItems];
+      DoubleArraySequence temp;
+      if (s1.size() + s2.size() > DEFAULT_CAPACITY) {
+         temp = new DoubleArraySequence(s1.size() + s2.size());
+      } else {
+         temp = new DoubleArraySequence();
       }
-      temp.manyItems = s1.manyItems + s2.manyItems;
+      for(int i = 0; i < s1.size(); i++){
+         temp.data[i] = s1.data[i];
+      }
+      for(int i = 0; i < s2.size(); i++){
+         temp.data[i + s1.size()] = s2.data[i];
+      }
+      temp.manyItems = s1.size() + s2.size();
       temp.currentIndex = temp.manyItems;
       return temp;
-  }
+   }
+
    /**
     * Change the current capacity of this sequence.
     * 
@@ -319,15 +333,15 @@ public class DoubleArraySequence implements Cloneable {
     *                             int[minimumCapacity].
     **/
    public void ensureCapacity(int minimumCapacity) {
-      if(data.length >= minimumCapacity)
-         return;
+      if(data.length < minimumCapacity){
+         double[] temp = new double[minimumCapacity];
+         for(int i = 0; i < data.length; i++){
+            temp[i] = data[i];
+         }
+         data = temp;
+      }
+   }
 
-      double[] newData = new double[minimumCapacity];
-      for (int i = 0; i < data.length; i++)
-         newData[i] = data[i];
-
-      data = newData;
-    }
 
    /**
     * Accessor method to get the current capacity of this sequence.
@@ -357,9 +371,9 @@ public class DoubleArraySequence implements Cloneable {
     **/
    public double getCurrent() {
       if(!isCurrent())
-      throw new IllegalStateException("There is no current element, so getCurrent may not be called.");
+      throw new IllegalStateException();
 
-    return data[currentIndex];
+      return data[currentIndex];
    }
 
    /**
@@ -372,7 +386,7 @@ public class DoubleArraySequence implements Cloneable {
     *         element at the moment)
     **/
    public boolean isCurrent() { // see if sequence has a specified current element
-      return currentIndex != manyItems;
+      return 0 <= currentIndex && currentIndex < manyItems;
    }
 
    /**
@@ -395,15 +409,15 @@ public class DoubleArraySequence implements Cloneable {
     *                                  removeCurrent may not be called.
     **/
    public void removeCurrent() {
-      if(!isCurrent()) {
-         throw new IllegalStateException("There is no current element, so removeCurrent may not be called.");
-       }
-       int i;
-       for (i = currentIndex; i < manyItems - 1; i++) {
-         data[i] = data[i + 1];
-       }
-       manyItems--;
+      if(!isCurrent())
+      throw new IllegalStateException();
+      for(int i = currentIndex; i < manyItems -1 ; i++){
+         data[i] = data[i+1];
+      }
+      manyItems--;
    }
+
+   
 
    /**
     * Determine the number of elements in this sequence.
@@ -444,9 +458,9 @@ public class DoubleArraySequence implements Cloneable {
     **/
    public void trimToSize() {
       double[] temp = new double[manyItems];
-      for (int i = 0; i < manyItems; i++)
+      for(int i = 0; i < manyItems; i++){
          temp[i] = data[i];
-
+      }
       data = temp;
    }
 
@@ -461,5 +475,10 @@ public class DoubleArraySequence implements Cloneable {
    // The new double array sequence is a copy of the DoubleArraySequence src.
    public DoubleArraySequence(DoubleArraySequence src) {
       data = new double[src.data.length];
+      for(int i = 0; i < src.data.length; i++){
+         data[i] = src.data[i];
+      }
+      currentIndex = src.currentIndex;
+      manyItems = src.manyItems;                                                         
    }
 }
