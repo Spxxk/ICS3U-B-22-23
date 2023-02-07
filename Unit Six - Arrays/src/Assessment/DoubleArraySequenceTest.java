@@ -15,7 +15,7 @@ public class DoubleArraySequenceTest {
  
        score += test(d1, new double[] {}, 0, 0, 10, 2);
        score += test(d2, new double[] {}, 0, 0, 5, 2);
-       //score += test(d3, new double[] {}, 0, 0, 5, 2);
+       score += test(d3, new double[] {}, 0, 0, 5, 2);
  
        d2.addAfter(1.0);
        score += test(d2, new double[] { 1.0 }, 0, 1, 5, 2);
