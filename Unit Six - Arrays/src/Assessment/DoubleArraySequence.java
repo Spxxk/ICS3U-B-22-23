@@ -116,7 +116,7 @@ public class DoubleArraySequence implements Cloneable {
     **/
    public void addAfter(double d) {
       if(manyItems + 1 > data.length){
-         int newCapacity = data.length*2; //fail earlier use less memory
+         int newCapacity = data.length*2; //fail earlier use less memory I think
          double[] temp = new double[newCapacity];
          for(int i = 0; i < data.length; i++){
             temp[i] = data[i];
